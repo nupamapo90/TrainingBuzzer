@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>スタートブザーくん</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --accent: #38bdf8;
+    --accent-dark: #0284c7;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --danger: #ef4444;
+    --danger-dark: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 60px;
+  }
+  .card {
+    width: 100%;
+    max-width: 480px;
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  h1 {
+    font-size: 1.3rem;
+    margin: 0 0 4px;
+    text-align: center;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+  }
+  .field {
+    margin-bottom: 18px;
+  }
+  label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+    color: var(--muted);
+  }
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  input[type="number"] {
+    width: 90px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: var(--text);
+    font-size: 1rem;
+  }
+  input[type="range"] {
+    flex: 1;
+  }
+  .unit {
+    color: var(--muted);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  .radio-group {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+    margin: 0;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .radio-group input[type="radio"] {
+    accent-color: var(--accent);
+  }
+  .buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  button {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  #startBtn {
+    background: var(--accent);
+    color: #04202f;
+  }
+  #startBtn:hover:not(:disabled) { filter: brightness(1.1); }
+  #stopBtn {
+    background: var(--danger);
+    color: white;
+  }
+  #stopBtn:hover:not(:disabled) { filter: brightness(1.1); }
+  .status {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--muted);
+    min-height: 24px;
+  }
+  .status.active {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .error {
+    color: var(--danger);
+    font-size: 0.8rem;
+    margin-top: 4px;
+    min-height: 1em;
+  }
+  .count {
+    text-align: center;
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-top: 8px;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>スタートブザーくん</h1>
+  <p class="subtitle">競泳練習用スタート合図</p>
+
+  <div class="field">
+    <label for="interval">スタート音の間隔（秒）</label>
+    <div class="input-row">
+      <input type="range" id="intervalRange" min="1" max="60" value="10">
+      <input type="number" id="interval" min="1" max="60" value="10">
+      <span class="unit">秒</span>
+    </div>
+    <div class="error" id="intervalError"></div>
+  </div>
+
+  <div class="field">
+    <label for="shortCount">短音の回数</label>
+    <div class="input-row">
+      <input type="range" id="shortCountRange" min="0" max="4" value="2">
+      <input type="number" id="shortCount" min="0" max="4" value="2">
+      <span class="unit">回</span>
+    </div>
+    <div class="error" id="shortCountError"></div>
+  </div>
+
+  <div class="field">
+    <label>繰り返し回数</label>
+    <div class="radio-group">
+      <label><input type="radio" name="repeatMode" value="finite" checked> 回数指定</label>
+      <label><input type="radio" name="repeatMode" value="infinite"> エンドレス</label>
+    </div>
+    <div class="input-row" style="margin-top:10px;">
+      <input type="number" id="repeatCount" min="0" max="1000" value="10" style="width:120px;">
+      <span class="unit">回（0〜1000）</span>
+    </div>
+    <div class="error" id="repeatError"></div>
+  </div>
+
+  <div class="buttons">
+    <button id="startBtn">開始</button>
+    <button id="stopBtn" disabled>停止</button>
+  </div>
+
+  <div class="status" id="status">待機中</div>
+  <div class="count" id="countDisplay"></div>
+</div>
+
+<script>
+(function () {
+  const SHORT_FREQ = 1000;
+  const SHORT_DUR = 0.1;   // 100ms
+  const LONG_FREQ = 1500;
+  const LONG_DUR = 1.0;    // 1000ms
+  const WAVE_TYPE = 'square'; // 'sine' | 'square' | 'sawtooth' | 'triangle' (set 'sine' to revert)
+  const SHORT_GAP = 1.0;   // spacing between short beeps, and between last short beep and the long tone
+
+  const intervalInput = document.getElementById('interval');
+  const intervalRange = document.getElementById('intervalRange');
+  const shortCountInput = document.getElementById('shortCount');
+  const shortCountRange = document.getElementById('shortCountRange');
+  const repeatCountInput = document.getElementById('repeatCount');
+  const repeatModeRadios = document.getElementsByName('repeatMode');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const statusEl = document.getElementById('status');
+  const countDisplay = document.getElementById('countDisplay');
+  const intervalError = document.getElementById('intervalError');
+  const shortCountError = document.getElementById('shortCountError');
+  const repeatError = document.getElementById('repeatError');
+
+  // Sync paired number/range inputs
+  function pair(numberEl, rangeEl) {
+    numberEl.addEventListener('input', () => { rangeEl.value = numberEl.value; });
+    rangeEl.addEventListener('input', () => { numberEl.value = rangeEl.value; });
+  }
+  pair(intervalInput, intervalRange);
+  pair(shortCountInput, shortCountRange);
+
+  let audioCtx = null;
+  let scheduler = null; // { timerId, stopped }
+  let signalCount = 0;
+
+  function getAudioCtx() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtx;
+  }
+
+  function playTone(ctx, freq, duration, startTime, activeNodes) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = WAVE_TYPE;
+    osc.frequency.value = freq;
+
+    // small fade to avoid clicks
+    const fade = 0.005;
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(1, startTime + fade);
+    gain.gain.setValueAtTime(1, startTime + duration - fade);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.02);
+
+    // Track the node so a Stop click can silence it immediately, even though
+    // it was scheduled ahead of time (lookahead scheduling would otherwise
+    // let already-queued tones keep playing for several seconds after Stop).
+    const entry = { osc, gain };
+    activeNodes.push(entry);
+    osc.onended = () => {
+      const idx = activeNodes.indexOf(entry);
+      if (idx !== -1) activeNodes.splice(idx, 1);
+    };
+  }
+
+  function silenceImmediately(ctx, activeNodes) {
+    const now = ctx.currentTime;
+    activeNodes.forEach(({ osc, gain }) => {
+      try {
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(gain.gain.value, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.01);
+      } catch (e) { /* node may already be stopped */ }
+      try {
+        osc.stop(now + 0.015);
+      } catch (e) { /* already stopped/scheduled to stop */ }
+    });
+    activeNodes.length = 0;
+  }
+
+  function validateInputs() {
+    let ok = true;
+    intervalError.textContent = '';
+    shortCountError.textContent = '';
+    repeatError.textContent = '';
+
+    const interval = Number(intervalInput.value);
+    if (!Number.isInteger(interval) || interval < 1 || interval > 60) {
+      intervalError.textContent = '1〜60の整数で指定してください。';
+      ok = false;
+    }
+
+    const shortCount = Number(shortCountInput.value);
+    if (!Number.isInteger(shortCount) || shortCount < 0 || shortCount > 4) {
+      shortCountError.textContent = '0〜4の整数で指定してください。';
+      ok = false;
+    }
+
+    const mode = getRepeatMode();
+    if (mode === 'finite') {
+      const repeatCount = Number(repeatCountInput.value);
+      if (!Number.isInteger(repeatCount) || repeatCount < 0 || repeatCount > 1000) {
+        repeatError.textContent = '0〜1000の整数で指定してください。';
+        ok = false;
+      }
+    }
+
+    return ok;
+  }
+
+  function getRepeatMode() {
+    for (const r of repeatModeRadios) {
+      if (r.checked) return r.value;
+    }
+    return 'finite';
+  }
+
+  repeatModeRadios.forEach(r => {
+    r.addEventListener('change', () => {
+      repeatCountInput.disabled = (getRepeatMode() === 'infinite');
+    });
+  });
+
+  function updateStatus(text, active) {
+    statusEl.textContent = text;
+    statusEl.classList.toggle('active', !!active);
+  }
+
+  function setControlsDisabled(disabled) {
+    [intervalInput, intervalRange, shortCountInput, shortCountRange, repeatCountInput]
+      .forEach(el => el.disabled = disabled);
+    repeatModeRadios.forEach(r => r.disabled = disabled);
+    startBtn.disabled = disabled;
+    stopBtn.disabled = !disabled;
+  }
+
+  function start() {
+    if (!validateInputs()) return;
+
+    const interval = Number(intervalInput.value);
+    const shortCount = Number(shortCountInput.value);
+    const mode = getRepeatMode();
+    const totalSignals = mode === 'infinite' ? Infinity : Number(repeatCountInput.value);
+
+    if (totalSignals === 0) {
+      updateStatus('繰り返し回数が0のため、何も再生されません。', false);
+      return;
+    }
+
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+
+    setControlsDisabled(true);
+    signalCount = 0;
+    countDisplay.textContent = '';
+    updateStatus('実行中…', true);
+
+    const state = { stopped: false, activeNodes: [] };
+    scheduler = state;
+
+    // Schedule cycles slightly ahead of real time using AudioContext clock,
+    // driven by a lightweight setInterval poller that tops up the schedule.
+    // Must exceed the longest short-beep lead time (up to 4 * SHORT_GAP before
+    // the long tone), or early beeps get scheduled after their target time has
+    // already passed and are silently dropped.
+    const lookahead = 4 * SHORT_GAP + 4.0; // seconds of audio to keep scheduled ahead
+    const tickMs = 200;
+    let nextCycleTime = ctx.currentTime + 0.05;
+    let cyclesScheduled = 0;
+
+    function scheduleCycle(cycleStartOfLongTone) {
+      // Each beep's start time (not its end time) is placed exactly SHORT_GAP
+      // apart, so onset-to-onset spacing is exact regardless of tone duration.
+      for (let i = 0; i < shortCount; i++) {
+        const beepsFromEnd = shortCount - i; // 1..shortCount
+        const t = cycleStartOfLongTone - beepsFromEnd * SHORT_GAP;
+        if (t >= ctx.currentTime) {
+          playTone(ctx, SHORT_FREQ, SHORT_DUR, t, state.activeNodes);
+        }
+      }
+      playTone(ctx, LONG_FREQ, LONG_DUR, cycleStartOfLongTone, state.activeNodes);
+
+      const displayDelayMs = Math.max(0, (cycleStartOfLongTone - ctx.currentTime) * 1000);
+      setTimeout(() => {
+        if (state.stopped) return;
+        signalCount++;
+        countDisplay.textContent = totalSignals === Infinity
+          ? `${signalCount} 回目`
+          : `${signalCount} / ${totalSignals} 回目`;
+        if (totalSignals !== Infinity && signalCount >= totalSignals) {
+          finish();
+        }
+      }, displayDelayMs);
+    }
+
+    function finish() {
+      if (state.stopped) return;
+      state.stopped = true;
+      clearInterval(pollId);
+      updateStatus('完了しました', false);
+      setControlsDisabled(false);
+    }
+
+    function topUpSchedule() {
+      while (
+        nextCycleTime < ctx.currentTime + lookahead &&
+        (totalSignals === Infinity || cyclesScheduled < totalSignals)
+      ) {
+        scheduleCycle(nextCycleTime);
+        nextCycleTime += interval;
+        cyclesScheduled++;
+      }
+    }
+
+    // Schedule the first cycle right now (not after the first poll tick), so the
+    // first start tone really sits on the intended time grid instead of being
+    // clamped to "now" up to tickMs late, which would shorten the first interval.
+    topUpSchedule();
+
+    const pollId = setInterval(() => {
+      if (state.stopped) { clearInterval(pollId); return; }
+      topUpSchedule();
+    }, tickMs);
+
+    state.pollId = pollId;
+    state.finish = finish;
+  }
+
+  function stop() {
+    if (scheduler && !scheduler.stopped) {
+      scheduler.stopped = true;
+      clearInterval(scheduler.pollId);
+      if (audioCtx) silenceImmediately(audioCtx, scheduler.activeNodes);
+    }
+    updateStatus('停止しました', false);
+    setControlsDisabled(false);
+  }
+
+  startBtn.addEventListener('click', start);
+  stopBtn.addEventListener('click', stop);
+})();
+</script>
+</body>
+</html>
